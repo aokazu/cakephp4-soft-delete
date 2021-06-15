@@ -20,7 +20,7 @@ You can install this plugin into your CakePHP application using [composer](http:
 Update your composer file to include this plugin:
 
 ```
-composer require salines/cakephp4-soft-delete "~1.0"
+composer require aokazu/cakephp4-soft-delete "~1.0"
 ```
 
 ## Configuration
