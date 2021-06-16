@@ -1,17 +1,19 @@
-# CakeSoftDelete plugin for CakePHP 4.x
+# CakeSoftDelete plugin for Cakephp4.* (Upgrade for CakePHP2's SoftDeletableBehavior)
 
 ## Fork
 
-This repo is forked from not maintained [pgbi/cakephp3-soft-delete](https://github.com/PGBI/cakephp3-soft-delete) and updated to avoid deprecated code in CakePHP >=4.0
+This repo is forked from not maintained [salines/cakephp4-soft-delete](https://github.com/salines/cakephp4-soft-delete) and updated to avoid deprecated code in CakePHP >=4.0
 
 ## Purpose
 
 This Cakephp plugin enables you to make your models soft deletable.
-When soft deleting an entity, it is not actually removed from your database. Instead, a `deleted` timestamp is set on the record.
+When soft deleting an entity, it is not actually removed from your database. 
+Instead, a `deleted` int2 is set 1 on the record.
+AND a `deleted_date` timestamp as string is set on the record.(`deleted_date` Default ='0')
 
 ## Requirements
 
-This plugins has been developed for cakephp >=4.0 and PHP >=7.2
+This Trait has been developed for cakephp >=4.0 and PHP >=8.0
 
 ## Installation
 
@@ -20,7 +22,7 @@ You can install this plugin into your CakePHP application using [composer](http:
 Update your composer file to include this plugin:
 
 ```
-composer require aokazu/cakephp4-soft-delete "~1.0"
+composer require aokazu/cakephp4-soft-delete "2.*"
 ```
 
 ## Configuration
@@ -40,21 +42,6 @@ class UsersTable extends Table
     ...
 ```
 
-Your soft deletable model database table should have a field called `deleted` of type DateTime with NULL as default value.
-If you want to customise this field you can declare the field in your Table class.
-
-```php
-// in src/Model/Table/UsersTable.php
-...
-use SoftDelete\Model\Table\SoftDeleteTrait;
-
-class UsersTable extends Table
-{
-    use SoftDeleteTrait;
-
-    protected $softDeleteField = 'deleted_date';
-    ...
-```
 
 ## Use
 
