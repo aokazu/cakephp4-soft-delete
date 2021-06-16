@@ -1,5 +1,4 @@
-<?php
-/** @noinspection PhpUnused */
+<?php /** @noinspection PhpUnused */
 
 namespace SoftDelete\ORM;
 
@@ -16,9 +15,13 @@ class Query extends CakeQuery
   {
     if (!$this->_beforeFindFired && $this->_type === 'select') {
       parent::triggerBeforeFind();
+      $aliasedField = $this
+        ->getRepository()
+        ->aliasField($this->getRepository()->getSoftDeleteField());
       if (!is_array($this->getOptions()) || !in_array('withDeleted', $this->getOptions())) {
-        $this->andWhere('deleted=0');
+        $this->andWhere($aliasedField . '=0');
       }
+
     }
   }
 }
