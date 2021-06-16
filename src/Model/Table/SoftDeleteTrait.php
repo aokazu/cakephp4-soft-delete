@@ -1,9 +1,16 @@
 <?php
 
+/** @noinspection PhpUnused */
+
 namespace SoftDelete\Model\Table;
 
+use ArrayObject;
+use Cake\Core\Exception\CakeException;
+use Cake\Event\Event;
 use Cake\ORM\RulesChecker;
 use Cake\Datasource\EntityInterface;
+use Datetime;
+use InvalidArgumentException;
 use SoftDelete\Error\MissingColumnException;
 use SoftDelete\ORM\Query;
 
@@ -13,9 +20,8 @@ trait SoftDeleteTrait
    * Get the configured deletion field
    *
    * @return string
-   * @throws \SoftDelete\Error\MissingFieldException
    */
-  public function getSoftDeleteField()
+  public function getSoftDeleteField(): string
   {
     if (isset($this->softDeleteField)) {
       $field = $this->softDeleteField;
@@ -35,9 +41,10 @@ trait SoftDeleteTrait
     return $field;
   }
 
+  /** @noinspection PhpParamsInspection */
   public function query(): \Cake\ORM\Query
   {
-    return new Query($this->getConnection(), $this);
+    return new \Cake\ORM\Query($this->getConnection(), $this);
   }
 
   /**
@@ -47,12 +54,12 @@ trait SoftDeleteTrait
    * dependent associations, and clear out join tables for BelongsToMany associations.
    *
    * @param \Cake\DataSource\EntityInterface $entity The entity to soft delete.
-   * @param \ArrayObject $options The options for the delete.
+   * @param ArrayObject $options The options for the delete.
    * @return bool success
-   * @throws \InvalidArgumentException if there are no primary key values of the
+   * @throws InvalidArgumentException if there are no primary key values of the
    * passed entity
    */
-  protected function _processDelete($entity, $options): bool
+  protected function _processDelete(EntityInterface $entity, ArrayObject $options): bool
   {
     if ($entity->isNew()) {
       return false;
@@ -61,13 +68,13 @@ trait SoftDeleteTrait
     $primaryKey = (array)$this->getPrimaryKey();
     if (!$entity->has($primaryKey)) {
       $msg = 'Deleting requires all primary key values.';
-      throw new \InvalidArgumentException($msg);
+      throw new InvalidArgumentException($msg);
     }
 
     if ($options['checkRules'] && !$this->checkRules($entity, RulesChecker::DELETE, $options)) {
       return false;
     }
-    /** @var \Cake\Event\Event $event */
+    /** @var Event $event */
     $event = $this->dispatchEvent(
       'Model.beforeDelete',
       [
@@ -86,25 +93,22 @@ trait SoftDeleteTrait
     );
 
     $query = $this->query();
-    $conditions = (array)$entity->extract($primaryKey);
+    $conditions = $entity->extract($primaryKey);
     $statement = $query->update()
-      ->set([$this->getSoftDeleteField() => date('Y-m-d H:i:s'), 'deleted' => 1])
+      ->set(['deleted_date' => date('Y-m-d H:i:s'), 'deleted' => 1])
       ->where($conditions)
       ->execute();
 
     $success = $statement->rowCount() > 0;
-    if (!$success) {
-      return $success;
+    if ($success) {
+      $this->dispatchEvent(
+        'Model.afterDelete',
+        [
+          'entity' => $entity,
+          'options' => $options
+        ]
+      );
     }
-
-    $this->dispatchEvent(
-      'Model.afterDelete',
-      [
-        'entity' => $entity,
-        'options' => $options
-      ]
-    );
-
     return $success;
   }
 
@@ -116,7 +120,7 @@ trait SoftDeleteTrait
   {
     $query = $this->query()
       ->update()
-      ->set([$this->getSoftDeleteField() => date('Y-m-d H:i:s'), 'deleted' => 1])
+      ->set(['deleted_date' => date('Y-m-d H:i:s'), 'deleted' => 1])
       ->where($conditions);
     $statement = $query->execute();
     $statement->closeCursor();
@@ -127,39 +131,34 @@ trait SoftDeleteTrait
    * Hard deletes the given $entity.
    * @return bool true in case of success, false otherwise.
    */
-  public function hardDelete(EntityInterface $entity)
+  public function hardDelete(EntityInterface $entity): bool
   {
     if (!$this->delete($entity)) {
       return false;
     }
     $primaryKey = (array)$this->getPrimaryKey();
     $query = $this->query();
-    $conditions = (array)$entity->extract($primaryKey);
+    $conditions = $entity->extract($primaryKey);
     $statement = $query->delete()
       ->where($conditions)
       ->execute();
 
-    $success = $statement->rowCount() > 0;
-    if (!$success) {
-      return $success;
-    }
-
-    return $success;
+    return $statement->rowCount() > 0;
   }
 
   /**
    * Hard deletes all records that were soft deleted before a given date.
-   * @param \DateTime $until Date until witch soft deleted records must be hard deleted.
+   * @param DateTime $until Date until witch soft deleted records must be hard deleted.
    * @return int number of affected rows.
    */
-  public function hardDeleteAll(\Datetime $until)
+  public function hardDeleteAll(Datetime $until): int
   {
     $query = $this->query()
       ->delete()
       ->where(
         [
-          $this->getSoftDeleteField() . "<>'0'",
-          $this->getSoftDeleteField() . ' <=' => $until->format('Y-m-d H:i:s')
+          "deleted<>0",
+          'deleted_date <=' => $until->format('Y-m-d H:i:s')
         ]
       );
     $statement = $query->execute();
@@ -172,10 +171,10 @@ trait SoftDeleteTrait
    * @param EntityInterface $entity Entity to be restored.
    * @return bool true in case of success, false otherwise.
    */
-  public function restore(EntityInterface $entity)
+  public function restore(EntityInterface $entity): bool
   {
-    $softDeleteField = $this->getSoftDeleteField();
-    $entity->$softDeleteField = null;
+    $entity->set('deleted', 0);
+    $entity->set('deleted_date', '0');
     return $this->save($entity);
   }
 }
