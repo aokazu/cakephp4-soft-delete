@@ -42,7 +42,7 @@ trait SoftDeleteTrait
   }
 
   /** @noinspection PhpParamsInspection */
-  public function query(): \Cake\ORM\Query
+  public function query(): Query
   {
     return new \Cake\ORM\Query($this->getConnection(), $this);
   }

@@ -1,8 +1,10 @@
 <?php /** @noinspection PhpUnused */
+declare(strict_types=1);
 
 namespace SoftDelete\ORM;
 
 use Cake\ORM\Query as CakeQuery;
+use ArrayObject;
 
 class Query extends CakeQuery
 {
